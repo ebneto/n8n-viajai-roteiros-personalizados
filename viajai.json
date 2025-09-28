@@ -1,0 +1,465 @@
+{
+  "name": "viajai",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ccf05e83-32bb-40a5-975c-704373ea1144",
+              "leftValue": "={{ $json.body.city }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "d6dd90f9-cccb-4575-82f8-50db619832b4",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -608,
+        0
+      ],
+      "id": "ff0381fa-4601-48c9-bda0-75ca7ee51328",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "a2fff7c0-846d-439e-8ec2-77d31c6ca140",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -976,
+        0
+      ],
+      "id": "0c7b7c99-ead7-45b6-a636-5e48abce6a61",
+      "name": "Recebimento do formulário de viagem",
+      "webhookId": "a2fff7c0-846d-439e-8ec2-77d31c6ca140"
+    },
+    {
+      "parameters": {
+        "url": "=https://pt.wikipedia.org/api/rest_v1/page/summary/{{ $json.body.country }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -384,
+        -96
+      ],
+      "id": "1f2fd05c-3124-408b-a8c4-515e0fd8bb0c",
+      "name": "HTTP Request Para Wikipedia"
+    },
+    {
+      "parameters": {
+        "url": "=https://pt.wikipedia.org/api/rest_v1/page/summary/{{ $json.body.city }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -384,
+        112
+      ],
+      "id": "c927cae5-7ea9-4556-988b-3eff42a59986",
+      "name": "HTTP Request para Wikipedia"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json.promptAI }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        32,
+        0
+      ],
+      "id": "de3d6501-5c5b-4c2d-bb7c-1ef06271c492",
+      "name": "Gerador do roteiro",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "9dUdaLBCN99JK8Td",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Faça as malas! Roteiro enviado :)",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -800,
+        0
+      ],
+      "id": "4b376014-cccb-4ec9-98d2-d37cab113f5e",
+      "name": "Notifica a tela",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Recebimento do formulário de viagem').item.json.body.email }}",
+        "subject": "ViajAí - Seu roteiro está pronto!",
+        "message": "=<!DOCTYPE html>\n<html lang=\"pt-BR\">\n</head>\n<body>\n    <header></header>\n    <main>\n        <div id=\"content-text\" style=\"\n            color: #003366; /* Azul Escuro */\n            font-family: Arial, sans-serif;\n            padding: 20px;\n            line-height: 1.6;\n        \">\n            <p id=\"text\">\n                Seu roteiro está pronto! Por favor, abra o arquivo PDF anexado.\n            </p>\n        </div>\n    </main>\n</body>\n</html>",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "={{ $json.name }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1056,
+        0
+      ],
+      "id": "81536218-d031-4b7e-b5b0-279aee67e53d",
+      "name": "Envia o Email com o PDF",
+      "webhookId": "7154a7d0-f83b-40ee-bbaa-4d1c49947213",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IuADzr0jxvDQ7Stv",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "617ac9a7-f75d-45d7-845f-63377aa5e6d9",
+              "name": "promptAI",
+              "value": "=Você é um agende de viagens experiente. Vai receber uma lista de parâmetros, e criar um roteiro customizado, seguindo as recomendações dadas. Comece sua resposta com o conteúdo fornecido abaixo.\nEu vou adicionar minhas instruções para orientar a sua resposta entre as marcações /* */. Ou seja, o que estiver entre /* */ são orientações minhas para você, e não devem ser retornadas na sua resposta.\n\n/*No começo da sua resposta, mostre esta frase abaixo, mas formatando para que siga o seu padrão de resposta*/\nFaça as malas! Seu roteiro para {{ $json.title }} está pronto!\n\n/*Agora, mostre esta outra frase, mas formatando para que siga o seu padrão de resposta*/\n{{ $json.extract }}\n\n/*Agora, mostre esta outra frase, mas formatando para que siga o seu padrão de resposta.\nAqui estão as preferências de viagem do usuário, e você deve considerar no roteiro que criará*/\nDados de busca\nPaís: {{ $('Recebimento do formulário de viagem').item.json.body.country }}\nDatas ou período: {{ $('Recebimento do formulário de viagem').item.json.body.duration }}{{ $('Recebimento do formulário de viagem').item.json.body.startDate }} {{ $('Recebimento do formulário de viagem').item.json.body.endDate }}\nInteresses: {{ $('Recebimento do formulário de viagem').item.json.body.interests[0] }} {{ $('Recebimento do formulário de viagem').item.json.body.interests[1] }} {{ $('Recebimento do formulário de viagem').item.json.body.interests[2] }} {{ $('Recebimento do formulário de viagem').item.json.body.interests[3] }} {{ $('Recebimento do formulário de viagem').item.json.body.interests[4] }} {{ $('Recebimento do formulário de viagem').item.json.body.interests[5] }}\nOrçamento: {{ $('Recebimento do formulário de viagem').item.json.body.budget }}\nCompanhia: {{ $('Recebimento do formulário de viagem').item.json.body.company }}\n\n/*E agora, coloque aqui o seu roteiro personalizado. Sinta-se livre para fazer recomendações de hotéis, pousadas e restaurantes, respeitando as preferências do usuário.*/\n/*Atenção! Eu vou colocar este retorno em uma página HTML. Portanto, retorne o texto com as formatações e quebras de linha ajustadas para o HTML.*/",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -160,
+        -96
+      ],
+      "id": "011fc768-9a04-4f54-9c69-fc836fe3dbc6",
+      "name": "Cria prompt com País"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7d1784d7-d2f9-43b9-8ac6-d56ed3f2fba6",
+              "name": "promptAI",
+              "value": "=Você é um agende de viagens experiente. Vai receber uma lista de parâmetros, e criar um roteiro customizado, seguindo as recomendações dadas. Comece sua resposta com o conteúdo fornecido abaixo.\nEu vou adicionar minhas instruções para orientar a sua resposta entre as marcações /* */. Ou seja, o que estiver entre /* */ são orientações minhas para você, e não devem ser retornadas na sua resposta.\n\n/*No começo da sua resposta, mostre esta frase abaixo, mas formatando para que siga o seu padrão de resposta*/\nFaça as malas! Seu roteiro para {{ $json.title }} está pronto!\n\n/*Agora, mostre esta outra frase, mas formatando para que siga o seu padrão de resposta*/\n{{ $json.extract }}\n\n/*Agora, mostre esta outra frase, mas formatando para que siga o seu padrão de resposta.\nAqui estão as preferências de viagem do usuário, e você deve considerar no roteiro que criará*/\nDados de busca\nPaís: {{ $('Recebimento do formulário de viagem').item.json.body.country }}\nCidade: {{ $('Recebimento do formulário de viagem').item.json.body.city }}\n\nDatas ou período: {{ $('Recebimento do formulário de viagem').item.json.body.duration }}{{ $('Recebimento do formulário de viagem').item.json.body.startDate }} {{ $('Recebimento do formulário de viagem').item.json.body.endDate }}\nInteresses: {{ $('Recebimento do formulário de viagem').item.json.body.interests[0] }} {{ $('Recebimento do formulário de viagem').item.json.body.interests[1] }} {{ $('Recebimento do formulário de viagem').item.json.body.interests[2] }} {{ $('Recebimento do formulário de viagem').item.json.body.interests[3] }} {{ $('Recebimento do formulário de viagem').item.json.body.interests[4] }} {{ $('Recebimento do formulário de viagem').item.json.body.interests[5] }}\nOrçamento: {{ $('Recebimento do formulário de viagem').item.json.body.budget }}\nCompanhia: {{ $('Recebimento do formulário de viagem').item.json.body.company }}\n\n/*E agora, coloque aqui o seu roteiro personalizado. Sinta-se livre para fazer recomendações de hotéis, pousadas e restaurantes, respeitando as preferências do usuário.*/\n/*Atenção! Eu vou colocar este retorno em uma página HTML. Portanto, retorne o texto com as formatações e quebras de linha ajustadas para o HTML.*/",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -160,
+        112
+      ],
+      "id": "c4045a5d-327a-4179-9a37-3feafd9a177f",
+      "name": "Cria prompt com Cidade e País"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appPU0jiFxdFQYYZ8",
+          "mode": "list",
+          "cachedResultName": "ViajaiBase",
+          "cachedResultUrl": "https://airtable.com/appPU0jiFxdFQYYZ8"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblXs9VxdZiiDvbNL",
+          "mode": "list",
+          "cachedResultName": "Images",
+          "cachedResultUrl": "https://airtable.com/appPU0jiFxdFQYYZ8/tblXs9VxdZiiDvbNL"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        368,
+        0
+      ],
+      "id": "c5e08fbb-1263-40c3-8fc4-c1d2cfb9b0f9",
+      "name": "Busca Imagens para o PDF",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "Hbc3Gkgm9KTGaYd8",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "html": "<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Estrutura com Imagens</title>\n</head>\n<body>\n\n    <header>\n        <img src={{ $json.Attachments[0].url }} alt=\"Header da Página\" id=\"header-image\" style=\"width: 100%; height: auto;\">\n    </header>\n\n    <main>\n        <div id=\"content-text\" style=\"\n            color: #003366; /* Azul Escuro */\n            font-family: Arial, sans-serif;\n            padding: 20px;\n            line-height: 1.6;\n        \">\n            <p id=\"text\">\n                {{ $('Gerador do roteiro').item.json.content.parts[0].text }}\n            </p>\n        </div>\n    </main>\n\n    <footer>\n        <img src={{ $json.Attachments[0].url }} alt=\"Footer da Página\" id=\"footer-image\" style=\"width: 100%; height: auto;\">\n    </footer>\n\n</body>\n</html>"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        544,
+        0
+      ],
+      "id": "fe95230f-827a-4f0f-835e-77f20ab5df63",
+      "name": "Gera o HTML"
+    },
+    {
+      "parameters": {
+        "operation": "URL/HTML to PDF",
+        "convertType": "htmlToPDF",
+        "html": "={{ $json.html }}",
+        "advancedOptions": {
+          "name": "=ViajAi-Roteiro"
+        }
+      },
+      "type": "n8n-nodes-pdfco.PDFco Api",
+      "typeVersion": 1,
+      "position": [
+        720,
+        0
+      ],
+      "id": "01f23b86-f6ae-4546-8605-089071cd73a4",
+      "name": "Gera o PDF",
+      "credentials": {
+        "pdfcoApi": {
+          "id": "xhXW7EfUXVn1nWUG",
+          "name": "PDF.co account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "={{ $json.name }}"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "id": "f2a9ef69-ff52-4559-be41-301cac6a7089",
+      "name": "Baixar PDF",
+      "executeOnce": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request Para Wikipedia",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request para Wikipedia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recebimento do formulário de viagem": {
+      "main": [
+        [
+          {
+            "node": "Notifica a tela",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request Para Wikipedia": {
+      "main": [
+        [
+          {
+            "node": "Cria prompt com País",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request para Wikipedia": {
+      "main": [
+        [
+          {
+            "node": "Cria prompt com Cidade e País",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerador do roteiro": {
+      "main": [
+        [
+          {
+            "node": "Busca Imagens para o PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notifica a tela": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cria prompt com País": {
+      "main": [
+        [
+          {
+            "node": "Gerador do roteiro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cria prompt com Cidade e País": {
+      "main": [
+        [
+          {
+            "node": "Gerador do roteiro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Imagens para o PDF": {
+      "main": [
+        [
+          {
+            "node": "Gera o HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gera o HTML": {
+      "main": [
+        [
+          {
+            "node": "Gera o PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gera o PDF": {
+      "main": [
+        [
+          {
+            "node": "Baixar PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baixar PDF": {
+      "main": [
+        [
+          {
+            "node": "Envia o Email com o PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6b2b564d-4c7d-470a-8e48-ebfadc2aeb4a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b8ebdec0a4a87211cd118543f41eb9f096c28111c711aeac6b37bddb4b9685bf"
+  },
+  "id": "xBWrkEmbbeQ0Wen2",
+  "tags": []
+}
